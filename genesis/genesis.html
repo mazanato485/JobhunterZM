@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Job Finder</title>
+    <style>
+        /* CSS Variables for Light/Dark Theme */
+        :root {
+            --bg-primary: #1e3a5f;
+            --bg-secondary: #0b0b0b;
+            --bg-tertiary: rgba(11, 11, 11, 0.9);
+            --text-primary: #ffffff;
+            --text-secondary: #f4f4f9;
+            --accent-gold: #d4af37;
+            --accent-green: #27ae60;
+            --accent-orange: #d35400;
+            --card-bg: #0a0a23;
+            --border-light: rgba(255, 255, 255, 0.06);
+        }
+
+        body.dark-mode {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: rgba(26, 26, 26, 0.95);
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --accent-gold: #9d7d4f;
+            --accent-green: #1f5a3d;
+            --accent-orange: #8b4513;
+            --card-bg: #0d0d0d;
+            --border-light: rgba(200, 200, 200, 0.08);
+        }
+
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            padding-top: 64px; /* space for fixed topnav */
+            box-sizing: border-box;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Top navigation resembling the example (keeps your colors) */
+        .topnav{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding: 0 1rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            z-index: 3000;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            transition: background-color 0.3s ease;
+        }
+        .topnav .logo{font-weight:700; color: var(--accent-gold);}
+        .topnav .nav-links{display:flex; gap:1rem; align-items:center}
+        .topnav .nav-links a{color: var(--text-primary); text-decoration:none; opacity:0.9}
+        .topnav .nav-actions{display:flex; gap:0.6rem; align-items:center}
+        .topnav .btn-create{background:transparent; border:2px solid var(--accent-green); color: var(--accent-green); padding:0.35rem 0.75rem; border-radius:6px; cursor:pointer; transition:all 0.3s ease}
+        .topnav .btn-hire{background: #007bff; color:#fff; padding:0.45rem 0.85rem; border-radius:6px; cursor:pointer; transition:all 0.3s ease; text-decoration:none;}
+        .topnav .btn-hire:hover{box-shadow: 0 0 16px rgba(211, 84, 0, 0.6); transform: translateY(-2px) scale(1.04)}
+        
+        /* Theme toggle button */
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            margin-left: 0.5rem;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Hero / Header */
+        header {
+            text-align: center;
+            padding: 6rem 1rem 4rem; /* large hero padding */
+            background-image: linear-gradient(135deg, rgba(30,58,95,0.85), rgba(8,16,37,0.85)), url('assets/header-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode header {
+            background-image: linear-gradient(135deg, rgba(10,10,10,0.9), rgba(5,5,5,0.95)), url('assets/header-bg.jpg');
+        }
+
+        header h1 {
+            font-size: 3rem;
+            margin: 0 0 0.5rem 0;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 0.5px;
+        }
+
+        header p {
+            font-size: 1.25rem;
+            margin: 0 0 1.5rem 0;
+            opacity: 0.95;
+        }
+
+        /* Search box styled as a rounded dark container that overlaps the hero */
+        .search-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin: -2rem auto 2rem auto; /* pull up into hero */
+            position: relative; /* for absolute suggestions */
+            width: 90%;
+            max-width: 980px;
+            background: var(--bg-tertiary);
+            padding: 0.7rem 0.9rem;
+            border-radius: 20px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+            transition: all 0.3s ease;
+        }
+
+        .search-section .search-field { flex: 1 1 0; min-width: 140px }
+        .search-section .search-input { width:100%; border-radius: 12px; background: var(--card-bg); border: 1px solid var(--border-light); padding:0.65rem; color: var(--text-primary); transition: all 0.3s ease }
+        .search-section .search-button { flex: 0 0 auto; border-radius:12px; padding:0.6rem 1rem; min-width: 96px }
+
+        /* Stack fields on small screens to avoid overlap */
+        @media (max-width: 720px) {
+            .search-section { flex-direction: column; gap: 0.65rem; margin: -1.2rem auto 1rem auto; width: 92%; }
+            .search-section .search-button { width: 100%; }
+        }
+
+        /* Suggestions dropdown for job title autocomplete */
+        .suggestions {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 320px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--text-primary);
+            color: #000000;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            list-style: none;
+            padding: 0.25rem 0;
+            margin: 0;
+            z-index: 1000;
+        }
+
+        .suggestions li {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+        }
+
+        .suggestions li:hover, .suggestions li.active {
+            background: #007bff;
+            color: #fff;
+        }
+
+        .search-input {
+            padding: 0.5rem;
+            border: 1px solid var(--text-primary);
+            border-radius: 4px;
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .search-button {
+            padding: 0.5rem 1rem;
+            background-color: var(--accent-gold);
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+
+        .search-button:hover {
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.45);
+            transform: scale(1.05);
+        }
+
+        /* Post a Job button: match the blue header style */
+        .post-button {
+            padding: 0.75rem 1.25rem; /* increased padding for larger appearance */
+            font-size: 1.15rem; /* larger text to match bigger icon */
+            background-color: #007bff; /* Blue */
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            transition: box-shadow 0.18s ease, transform 0.18s ease;
+        }
+
+        /* If the button contains an <img> icon or .icon element, enlarge it */
+        .post-button img,
+        .post-button .icon {
+            width: 36px;
+            height: 36px;
+            display: inline-block;
+            vertical-align: middle;
+            flex: 0 0 36px;
+        }
+
+        .post-button:hover {
+            box-shadow: 0 0 16px rgba(0, 123, 255, 0.45); /* stronger blue glow */
+            transform: translateY(-2px) scale(1.04);
+        }
+
+        .categories {
+            text-align: center;
+            margin: 2rem 0;
+            background: var(--bg-primary);
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .categories h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .category {
+            display: inline-block;
+            margin: 0 1rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .category-header {
+            position: relative;
+            display: inline-block;
+        }
+
+        .category img {
+            width: 50px;
+            height: 50px;
+        }
+
+        .category-icon {
+            display: block;
+        }
+
+        .mini-icon {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            top: -1px;
+            right: -1px;
+            border-radius: 50%;
+        }
+
+        .category p {
+            margin-top: 0.5rem;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        /* Login Section Styles */
+        .login-section {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        /* Popup Styles */
+        .popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .popup-content {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 8px;
+            color: var(--text-primary);
+            width: 90%;
+            max-width: 400px;
+            transition: all 0.3s ease;
+        }
+
+        /* Apply popup variant: white in light mode, grey in dark mode */
+        #jobSeekerPopup .popup-content.apply-popup {
+            background: #ffffff;
+            color: #000000;
+            box-shadow: 0 12px 40px rgba(2,6,23,0.25);
+        }
+
+        .dark-mode #jobSeekerPopup .popup-content.apply-popup {
+            background: #374151; /* gray-700 */
+            color: #f4f4f9;
+            box-shadow: 0 12px 40px rgba(3,7,18,0.6);
+        }
+
+        /* Animation Styles */
+        .animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1f1f1f;
+            color: #f4f4f9;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: fadeOut 2s forwards;
+        }
+
+        @keyframes fadeOut {
+            0% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+
+        /* Input Styles */
+        input {
+            border-radius: 20px; /* Squircle shape */
+            transition: box-shadow 0.3s ease, transform 0.3s ease; /* Animation */
+        }
+
+        input:focus {
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            transform: scale(1.05); /* Slight zoom effect */
+        }
+
+        /* Posted Jobs Section Styles (blue theme to match home page) */
+        .posted-jobs-section {
+            margin-top: 3rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(30,58,95,0.95), rgba(8,16,37,0.9));
+            border-radius: 12px;
+            border-top: 3px solid rgba(59,130,246,0.9); /* blue accent */
+        }
+
+        .posted-jobs-section h2 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: #bfdbfe; /* light blue */
+            font-size: 1.8rem;
+        }
+
+        .posted-jobs-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .job-card {
+            background: rgba(6,30,59,0.55); /* subtle blue panel */
+            padding: 1.5rem;
+            border-radius: 10px;
+            border-left: 4px solid #3b82f6; /* blue left accent */
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(3,37,65,0.35);
+        }
+
+        .job-card:hover {
+            box-shadow: 0 8px 28px rgba(3,37,65,0.45);
+            transform: translateY(-3px);
+        }
+
+        .job-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .job-card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #e0f2fe; /* very light blue */
+            margin: 0;
+        }
+
+        .job-card-company {
+            font-size: 0.95rem;
+            color: #93c5fd;
+            margin: 0.3rem 0 0 0;
+        }
+
+        .job-card-meta {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #93c5fd;
+        }
+
+        .job-card-email {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .job-card-types {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .job-type-badge {
+            background: #2563eb; /* blue */
+            color: #ffffff;
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .job-card-description {
+            color: #cfe9ff; /* pale blue text for readability */
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .job-card-date {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(148,163,184,0.12);
+            font-size: 0.85rem;
+            color: #93c5fd;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="topnav">
+        <div style="display:flex;align-items:center;gap:1rem">
+        </div>
+        <div class="nav-actions">
+            <button id="themeToggle" class="theme-toggle" title="Toggle theme">☾</button>
+            <a class="btn-hire" href="post_job.html">Start Hiring</a>
+        </div>
+    </nav>
+
+    <header>
+        <h1>JOB SEARCHING</h1>
+        <p>Find your dream job</p>
+    </header>
+
+    <div class="search-section">
+        <div class="search-field" style="position:relative;">
+            <input id="jobInput" type="text" placeholder="Job title or keyword" class="search-input" autocomplete="off" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false">
+            <ul id="jobSuggestions" class="suggestions" role="listbox" style="display:none;"></ul>
+        </div>
+        <div class="search-field" style="position:relative;">
+            <input id="locationInput" type="text" placeholder="Location" class="search-input" autocomplete="off" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false">
+            <ul id="locationSuggestions" class="suggestions" role="listbox" style="display:none;"></ul>
+        </div>
+        <button class="search-button" id="searchButton">Search</button>
+    </div> 
+
+    <div class="categories">
+        <h2>Popular Categories</h2>
+        <div class="category">
+            <img src="assets/accounting-icon.svg" alt="Accounting">
+            <p>Accounting</p>
+        </div>
+        <div class="category">
+            <div class="category-header">
+                <img src="assets/technology-icon-mini.svg" alt="Technology" class="category-icon">
+                <img src="assets/technology-icon-mini.svg" alt="Technology Mini" class="mini-icon">
+            </div>
+            <p>Technology</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Login Section -->
+        <section class="login-section">
+        </section> 
+
+        <!-- Popups -->
+
+        <!-- Job Seeker Popup: Apply / Upload Resume -->
+        <div id="jobSeekerPopup" class="popup" style="display: none;">
+            <div class="popup-content">
+                <h3>Apply / Upload Resume</h3>
+                <form id="resumeForm">
+                    <label for="seeker-name">Full name:</label>
+                    <input type="text" id="seeker-name" name="applicant_name" placeholder="Jane Doe" required>
+
+                    <label for="seeker-email">Your email:</label>
+                    <input type="email" id="seeker-email" name="applicant_email" placeholder="you@example.com" required>
+
+                    <label for="hirer-email">Hirer email:</label>
+                    <input type="email" id="hirer-email" name="hirer_email" placeholder="hirer@example.com" required>
+
+                    <input type="hidden" id="apply-job-title" name="job_title" value="">
+
+                    <label for="seeker-resume">Resume (PDF, DOC, DOCX):</label>
+                    <input type="file" id="seeker-resume" name="resume" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+
+                    <div id="formMessage" style="margin-top:1rem;font-size:0.95rem"></div>
+
+                    <div style="display:flex;gap:10px;margin-top:1rem;">
+                        <button type="submit" id="applyButton" class="btn">Apply</button>
+                        <button type="button" class="btn btn-secondary" onclick="closePopup('jobSeekerPopup')">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Posted Jobs Section -->
+        <section class="posted-jobs-section">
+            <h2>Recently Posted Jobs</h2>
+            <div id="postedJobsList" class="posted-jobs-list"></div>
+        </section>
+
+    </div>
+
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.emailjs.com/sdk/3.2.0/email.min.js"></script>
+    <script>
+        // Initialize EmailJS with your user ID (replace the placeholder)
+        // Get your User ID from https://dashboard.emailjs.com/admin
+        (function(){
+            emailjs.init('YOUR_EMAILJS_USER_ID'); // <-- Replace with your EmailJS user ID
+        })();
+
+        function openPopup(popupId) {
+            document.getElementById(popupId).style.display = 'flex';
+        }
+
+        function closePopup(popupId) {
+            const p = document.getElementById(popupId);
+            if (p) {
+                p.style.display = 'none';
+                const content = p.querySelector('.popup-content');
+                if (content) content.classList.remove('apply-popup');
+            }
+        }
+
+        // Helpers: show messages in the popup
+        function showFormMessage(message, type = 'info') {
+            const msg = document.getElementById('formMessage');
+            msg.textContent = message;
+            msg.style.color = type === 'error' ? '#ff6b6b' : (type === 'success' ? '#7efc6f' : '#f4f4f9');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const resumeForm = document.getElementById('resumeForm');
+            const fileInput = document.getElementById('seeker-resume');
+            const applyButton = document.getElementById('applyButton');
+
+            // Configuration
+            const ALLOWED_TYPES = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+            resumeForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Basic form values
+                const name = document.getElementById('seeker-name').value.trim();
+                const applicantEmail = document.getElementById('seeker-email').value.trim();
+                const hirerEmail = document.getElementById('hirer-email').value.trim();
+                const file = fileInput.files[0];
+
+                // Validation: fields
+                if (!name || !applicantEmail || !hirerEmail) {
+                    showFormMessage('Please fill in all required fields.', 'error');
+                    return;
+                }
+
+                // Validation: file
+                if (!file) {
+                    showFormMessage('Please attach your resume (PDF or Word document).', 'error');
+                    return;
+                }
+
+                if (!ALLOWED_TYPES.includes(file.type)) {
+                    showFormMessage('Invalid file type. Please upload a PDF, DOC, or DOCX file.', 'error');
+                    return;
+                }
+
+                if (file.size > MAX_FILE_SIZE) {
+                    showFormMessage('File is too large. Max size is 5 MB.', 'error');
+                    return;
+                }
+
+                // Set loading state
+                applyButton.disabled = true;
+                const originalText = applyButton.textContent;
+                applyButton.textContent = 'Sending...';
+                showFormMessage('Sending your resume...', 'info');
+
+                // Read file as Data URL (base64)
+                const reader = new FileReader();
+                reader.onload = function() {
+                    const fileDataURL = reader.result; // data:<mime>;base64,...
+
+                    // Prepare parameters for EmailJS
+                    const templateParams = {
+                        applicant_name: name,
+                        applicant_email: applicantEmail,
+                        hirer_email: hirerEmail,
+                        // You can include additional template fields here
+                        // Send the whole data URL as attachment using 'attachments' param
+                        attachments: [
+                            {
+                                name: file.name,
+                                data: fileDataURL
+                            }
+                        ]
+                    };
+
+                    // Send via EmailJS
+                    // Replace 'YOUR_SERVICE_ID' and 'YOUR_TEMPLATE_ID' with your EmailJS settings
+                    emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+                        .then(function(response) {
+                            // Success
+                            showFormMessage('Resume sent successfully.', 'success');
+                            resumeForm.reset();
+                            // Keep the user on the page; optionally close the popup after short delay
+                            // After successful send, also open the user's mail client addressed to the hirer with composed body
+                            try {
+                                const jobTitle = document.getElementById('apply-job-title') ? document.getElementById('apply-job-title').value : '';
+                                const subject = encodeURIComponent(`Application: ${jobTitle} - ${name}`);
+                                let body = `Applicant Name: ${name}\nApplicant Email: ${applicantEmail}\n`;
+                                if (jobTitle) body += `Position: ${jobTitle}\n`;
+                                body += `\nMessage:\nI am interested in this position. Please find my resume attached.\n\nRegards,\n${name}`;
+                                const mailto = `mailto:${encodeURIComponent(hirerEmail)}?subject=${subject}&body=${encodeURIComponent(body)}`;
+                                // open mail client
+                                window.location.href = mailto;
+                            } catch (err) {
+                                console.error('Could not open mailto:', err);
+                            }
+                            setTimeout(() => { closePopup('jobSeekerPopup'); }, 1200);
+                        }, function(error) {
+                            // Error — provide user-friendly message
+                            console.error('EmailJS error:', error);
+                            showFormMessage('There was a problem sending your resume. Please try again later.', 'error');
+                        }).finally(() => {
+                            // Reset loading state
+                            applyButton.disabled = false;
+                            applyButton.textContent = originalText;
+                        });
+                };
+
+                reader.onerror = function() {
+                    showFormMessage('Could not read the file. Please try a different file.', 'error');
+                    applyButton.disabled = false;
+                    applyButton.textContent = originalText;
+                };
+
+                reader.readAsDataURL(file);
+            });
+        });
+    </script>
+
+    <script>
+        // Theme toggle: toggles .dark-mode on body, swaps logo and persists preference
+        (function(){
+            const btn = document.getElementById('themeToggle');
+            const logo = document.getElementById('logoImg');
+            const lightLogo = 'assets/logo-light.png';
+            const darkLogo = 'assets/logo-dark.png';
+
+            function applyTheme(isDark){
+                if(isDark) document.body.classList.add('dark-mode');
+                else document.body.classList.remove('dark-mode');
+
+                // update toggle icon: show sun when in dark mode (to switch to light), moon when in light mode
+                if(btn) {
+                btn.innerHTML = isDark ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+            }
+
+                // swap logo if available
+                if(logo){
+                    // choose logo that provides contrast: light logo on dark backgrounds, dark logo on light backgrounds
+                    logo.src = isDark ? lightLogo : darkLogo;
+                }
+            }
+
+            // initialize from localStorage
+            const stored = localStorage.getItem('gg_theme');
+            const isDark = stored ? stored === 'dark' : false;
+            applyTheme(isDark);
+
+            if(btn){
+                btn.addEventListener('click', function(){
+                    const dark = !document.body.classList.contains('dark-mode');
+                    applyTheme(dark);
+                    localStorage.setItem('gg_theme', dark ? 'dark' : 'light');
+                });
+            }
+        })();
+    </script>
+
+    <script>
+    // Autocomplete for Job Title input
+    (function() {
+        // Configurable list of previously listed jobs (edit as needed)
+        const jobs = [
+            'Accountant',
+            'Software Engineer',
+            'Marketing Manager',
+            'Sales Associate',
+            'Project Manager',
+            'Data Analyst',
+            'Customer Support',
+            'Graphic Designer',
+            'HR Specialist',
+            'Business Analyst',
+            'Frontend Developer',
+            'Backend Developer',
+            'Product Manager',
+            'QA Engineer'
+        ];
+
+        const jobInput = document.getElementById('jobInput');
+        const suggestionsEl = document.getElementById('jobSuggestions');
+
+        let activeIndex = -1; // For keyboard navigation
+
+        // Render suggestion list (simple, accessible listitems)
+        function renderSuggestions(list) {
+            if (!list.length) {
+                suggestionsEl.style.display = 'none';
+                jobInput.setAttribute('aria-expanded', 'false');
+                suggestionsEl.innerHTML = '';
+                return;
+            }
+            suggestionsEl.style.display = 'block';
+            jobInput.setAttribute('aria-expanded', 'true');
+            suggestionsEl.innerHTML = list.map((item, i) => {
+                // Highlighting the matching substring could be added here
+                return `<li role="option" data-index="${i}" tabindex="-1">${item}</li>`;
+            }).join('');
+        }
+
+        // Filter jobs by substring (case-insensitive) and limit results
+        function filterJobs(query) {
+            const q = query.trim().toLowerCase();
+            if (!q) return [];
+            return jobs.filter(j => j.toLowerCase().includes(q)).slice(0, 8);
+        }
+
+        // Input event: update suggestions
+        jobInput.addEventListener('input', function() {
+            const matches = filterJobs(jobInput.value);
+            activeIndex = -1;
+            renderSuggestions(matches);
+        });
+
+        // Keyboard navigation for suggestions (ArrowUp, ArrowDown, Enter, Escape)
+        jobInput.addEventListener('keydown', function(e) {
+            const items = suggestionsEl.querySelectorAll('li');
+            if (e.key === 'ArrowDown') {
+                if (items.length === 0) return;
+                activeIndex = Math.min(activeIndex + 1, items.length - 1);
+                updateActive(items);
+                e.preventDefault();
+            } else if (e.key === 'ArrowUp') {
+                if (items.length === 0) return;
+                activeIndex = Math.max(activeIndex - 1, 0);
+                updateActive(items);
+                e.preventDefault();
+            } else if (e.key === 'Enter') {
+                if (activeIndex >= 0 && items[activeIndex]) {
+                    selectSuggestion(items[activeIndex].textContent);
+                    e.preventDefault();
+                }
+            } else if (e.key === 'Escape') {
+                clearSuggestions();
+            }
+        });
+
+        // Click to select
+        suggestionsEl.addEventListener('click', function(e) {
+            const li = e.target.closest('li');
+            if (!li) return;
+            selectSuggestion(li.textContent);
+        });
+
+        function updateActive(items) {
+            items.forEach(el => el.classList.remove('active'));
+            if (activeIndex >= 0 && items[activeIndex]) {
+                items[activeIndex].classList.add('active');
+                items[activeIndex].scrollIntoView({block:'nearest'});
+            }
+        }
+
+        function selectSuggestion(value) {
+            jobInput.value = value;
+            clearSuggestions();
+            jobInput.focus();
+        }
+
+        function clearSuggestions() {
+            suggestionsEl.innerHTML = '';
+            suggestionsEl.style.display = 'none';
+            jobInput.setAttribute('aria-expanded', 'false');
+            activeIndex = -1;
+        }
+
+        // Close suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-field') && !e.target.closest('#jobSuggestions')) {
+                clearSuggestions();
+            }
+        });
+
+    })();
+    </script>
+
+    <script>
+    // Autocomplete for Location (Zambia provinces)
+    (function() {
+        const provinces = [
+            'Central Province',
+            'Copperbelt Province',
+            'Eastern Province',
+            'Luapula Province',
+            'Lusaka Province',
+            'Muchinga Province',
+            'North-Western Province',
+            'Northern Province',
+            'Southern Province',
+            'Western Province'
+        ];
+
+        const locationInput = document.getElementById('locationInput');
+        const locationSuggestions = document.getElementById('locationSuggestions');
+        let activeIndex = -1;
+
+        function renderLocationSuggestions(list) {
+            if (!list.length) {
+                locationSuggestions.style.display = 'none';
+                locationInput.setAttribute('aria-expanded', 'false');
+                locationSuggestions.innerHTML = '';
+                return;
+            }
+            locationSuggestions.style.display = 'block';
+            locationInput.setAttribute('aria-expanded', 'true');
+            locationSuggestions.innerHTML = list.map((item, i) => `<li role="option" data-index="${i}" tabindex="-1">${item}</li>`).join('');
+        }
+
+        function filterProvinces(query) {
+            const q = query.trim().toLowerCase();
+            if (!q) return [];
+            return provinces.filter(p => p.toLowerCase().includes(q)).slice(0, 10);
+        }
+
+        locationInput.addEventListener('input', function() {
+            const matches = filterProvinces(locationInput.value);
+            activeIndex = -1;
+            renderLocationSuggestions(matches);
+        });
+
+        locationInput.addEventListener('keydown', function(e) {
+            const items = locationSuggestions.querySelectorAll('li');
+            if (e.key === 'ArrowDown') {
+                if (items.length === 0) return;
+                activeIndex = Math.min(activeIndex + 1, items.length - 1);
+                updateActive(items);
+                e.preventDefault();
+            } else if (e.key === 'ArrowUp') {
+                if (items.length === 0) return;
+                activeIndex = Math.max(activeIndex - 1, 0);
+                updateActive(items);
+                e.preventDefault();
+            } else if (e.key === 'Enter') {
+                if (activeIndex >= 0 && items[activeIndex]) {
+                    selectLocation(items[activeIndex].textContent);
+                    e.preventDefault();
+                }
+            } else if (e.key === 'Escape') {
+                clearLocationSuggestions();
+            }
+        });
+
+        locationSuggestions.addEventListener('click', function(e) {
+            const li = e.target.closest('li');
+            if (!li) return;
+            selectLocation(li.textContent);
+        });
+
+        function updateActive(items) {
+            items.forEach(el => el.classList.remove('active'));
+            if (activeIndex >= 0 && items[activeIndex]) {
+                items[activeIndex].classList.add('active');
+                items[activeIndex].scrollIntoView({block:'nearest'});
+            }
+        }
+
+        function selectLocation(value) {
+            locationInput.value = value;
+            clearLocationSuggestions();
+            locationInput.focus();
+        }
+
+        function clearLocationSuggestions() {
+            locationSuggestions.innerHTML = '';
+            locationSuggestions.style.display = 'none';
+            locationInput.setAttribute('aria-expanded', 'false');
+            activeIndex = -1;
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-field') && !e.target.closest('#locationSuggestions')) {
+                clearLocationSuggestions();
+            }
+        });
+
+        // Load and display posted jobs
+        function displayPostedJobs() {
+            const jobs = JSON.parse(localStorage.getItem('postedJobs') || '[]');
+            const jobsList = document.getElementById('postedJobsList');
+            
+            // Sort jobs by date (newest first)
+            jobs.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+            
+            if (jobs.length === 0) {
+                jobsList.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 2rem;">No jobs posted yet.</p>';
+                return;
+            }
+            
+            jobsList.innerHTML = jobs.map(job => {
+                const postedDate = new Date(job.postedDate).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                return `
+                    <div class="job-card">
+                        <div class="job-card-header">
+                            <div>
+                                <h3 class="job-card-title">${job.jobTitle}</h3>
+                                <p class="job-card-company">${job.companyName}</p>
+                            </div>
+                            <div>
+                                <button class="btn" data-hirer-email="${job.employerEmail}" data-job-title="${encodeURIComponent(job.jobTitle)}" data-company="${encodeURIComponent(job.companyName)}" onclick="openApplyPopup(event)">Apply</button>
+                            </div>
+                        </div>
+                        <div class="job-card-meta">
+                            <div class="job-card-email">
+                                📧 <a href="mailto:${job.employerEmail}" style="color: #7efc6f; text-decoration: none;">${job.employerEmail}</a>
+                            </div>
+                        </div>
+                        ${job.jobTypes.length > 0 ? `
+                            <div class="job-card-types">
+                                ${job.jobTypes.map(type => `<span class="job-type-badge">${type}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${job.description ? `<p class="job-card-description">${job.description}</p>` : ''}
+                        <div class="job-card-date">📅 Posted: ${postedDate}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Display jobs when page loads
+        document.addEventListener('DOMContentLoaded', displayPostedJobs);
+        
+        // Also listen for storage changes (to update when jobs are posted from another tab)
+        window.addEventListener('storage', displayPostedJobs);
+
+        // Open apply popup from job card; prefill hirer email and adapt popup style to theme
+        window.openApplyPopup = function(e) {
+            // e may be an Event or the button itself
+            let btn = e && e.currentTarget ? e.currentTarget : (e && e.target ? e.target : null);
+            if (!btn || !btn.dataset) return;
+            const hirerEmail = btn.dataset.hirerEmail || '';
+            const popup = document.getElementById('jobSeekerPopup');
+            const content = popup ? popup.querySelector('.popup-content') : null;
+            if (content) content.classList.add('apply-popup');
+            if (popup) popup.style.display = 'flex';
+            // Prefill hirer email and focus the name field
+            const hirerInput = document.getElementById('hirer-email');
+            if (hirerInput) hirerInput.value = hirerEmail;
+            const nameInput = document.getElementById('seeker-name');
+            setTimeout(() => { if (nameInput) nameInput.focus(); }, 120);
+            // Clear messages
+            const formMsg = document.getElementById('formMessage'); if (formMsg) formMsg.textContent = '';
+        };
+
+    })();
+    </script>
+</body>
+</html>

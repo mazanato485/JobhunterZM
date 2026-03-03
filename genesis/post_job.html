@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post a Job</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; background: #1e3a5f; color: #fff; }
+        header { text-align: center; margin-bottom: 1.5rem; }
+        .card { background: #0a0a23; padding: 1rem; border-radius: 8px; max-width: 760px; margin: 0 auto; }
+        label { display:block; margin-top: 0.75rem; }
+        input[type="text"], input[type="email"], textarea, select { width:100%; padding:0.6rem; border-radius:6px; border:1px solid #444; background:#111; color:#fff; }
+        textarea { min-height: 120px; }
+        .actions { display:flex; gap:10px; margin-top:1rem; }
+        .btn { background:#007bff; color:#fff; border:none; padding:0.6rem 1rem; border-radius:6px; cursor:pointer; }
+        .btn.secondary { background:#6c757d; }
+        .hint { font-size:0.9rem; color:#cbd5e1; margin-top:0.5rem; }
+        .job-types { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+        .job-types label { background:#0f1724; padding:6px 8px; border-radius:6px; cursor:pointer; }
+        .success { color:#7efc6f; margin-top:0.75rem; }
+
+        /* Preview Modal Styles */
+        .preview-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .preview-modal-content {
+            background: #eeecec;
+            color: #000000;
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 70vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s ease-in-out;
+        }
+
+        .preview-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 1rem;
+        }
+
+        .preview-modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .preview-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #000000;
+            transition: color 0.2s ease;
+        }
+
+        .preview-modal-close:hover {
+            color: #666666;
+        }
+
+        .preview-modal-content p {
+            margin: 0.75rem 0;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .preview-modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 1.5rem;
+            justify-content: flex-end;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .preview-modal-footer button {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .preview-modal-footer .btn-close {
+            background: #e5e7eb;
+            color: #000000;
+        }
+
+        .preview-modal-footer .btn-close:hover {
+            background: #d1d5db;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Popup overlay */
+        .popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width:100%;
+            height:100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items:center;
+            z-index: 1000;
+        }
+        .popup-content {
+            background: #ffffff;
+            padding: 1.25rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 420px;
+            color: #000000;
+        }
+        .popup-content label { display:block; margin-top:0.5rem; }
+        .popup-content input { width:100%; padding:0.5rem; border-radius:6px; border:1px solid #334155; background:#ffffff; color:#000000; }
+        .login-actions { display:flex; gap:8px; margin-top:12px; justify-content:flex-end; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Post a Job</h1>
+        <p class="hint">Fill the form below and send the job posting by email (opens your email client).</p>
+    </header>
+
+    <!-- Login Popup (shown when the user is not logged in) -->
+    <div id="loginPopup" class="popup" style="display:none;">
+        <div class="popup-content" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+            <h2 id="loginTitle" style="margin-top:0;">Please sign in to post a job</h2>
+            <label for="loginEmail">Email</label>
+            <input id="loginEmail" type="email" placeholder="you@company.com" autocomplete="email">
+            <label for="loginPassword">Password</label>
+            <input id="loginPassword" type="password" placeholder="Enter password" autocomplete="current-password">
+            <div id="loginError" style="color:#ff6b6b; margin-top:0.5rem; display:none;"></div>
+            <div class="login-actions">
+                <button class="btn secondary" id="loginCancel">Cancel</button>
+                <button class="btn" id="loginSubmit">Sign in</button>
+            </div>
+            <p style="font-size:0.85rem; margin-top:8px; color:#9aa6c2;">Note: This demo uses client-side "login". For real sites use server-side authentication.</p>
+        </div>
+    </div>
+
+    <main class="card">
+        <form id="postJobForm">
+            <label for="employerName">Company name</label>
+            <input id="employerName" type="text" placeholder="Acme Ltd / John Doe">
+
+            <label for="employerEmail">Your email (required)</label>
+            <input id="employerEmail" type="email" placeholder="you@company.com" required>
+
+            <label for="recipients">Recipients (email addresses, comma-separated) <span style="font-size:0.9rem;color:#9aa6c2">(leave blank to compose without recipient)</span></label>
+            <input id="recipients" type="text" placeholder="applicant1@example.com, applicant2@example.com">
+
+            <label>Job types / Categories (choose any)</label>
+            <div class="job-types" id="jobTypes">
+                <label><input type="checkbox" value="Full-time"> Full-time</label>
+                <label><input type="checkbox" value="Part-time"> Part-time</label>
+                <label><input type="checkbox" value="Contract"> Contract</label>
+                <label><input type="checkbox" value="Internship"> Internship</label>
+                <label><input type="checkbox" value="Remote"> Remote</label>
+                <label><input type="checkbox" value="On-site"> On-site</label>
+                <label><input type="checkbox" value="Temporary"> Temporary</label>
+            </div>
+
+            <label for="otherTypes">Other job types (comma-separated)</label>
+            <input id="otherTypes" type="text" placeholder="e.g., Teaching, Cleaning">
+
+            <label for="jobTitle">Job title</label>
+            <input id="jobTitle" type="text" placeholder="e.g., Senior Software Engineer" required>
+
+            <label for="description">Job description</label>
+            <textarea id="description" placeholder="Describe responsibilities, requirements, salary, location, etc."></textarea>
+
+            <div class="actions">
+                <button class="btn" id="sendButton" type="submit">Compose Email (Open in same tab)</button>
+                <button type="button" class="btn secondary" id="previewButton">Preview</button>
+                <a href="genesis.html" class="btn secondary" style="text-decoration:none; display:inline-flex; align-items:center;">Back</a>
+            </div>
+
+            <div id="feedback" class="success" role="status" aria-live="polite"></div>
+        </form>
+
+        <div id="preview" style="white-space:pre-wrap; background:#081025; padding:12px; margin-top:12px; border-radius:6px; display:none; color:#dbeafe"></div>
+    </main>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="preview-modal" style="display:none;">
+        <div class="preview-modal-content">
+            <div class="preview-modal-header">
+                <h2>Job Preview</h2>
+                <button class="preview-modal-close" aria-label="Close preview">&times;</button>
+            </div>
+            <div id="previewContent"></div>
+            <div class="preview-modal-footer">
+                <button class="btn-close" id="closePreviewBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Login handling: simple client-side flow (demo only)
+        function showLoginPopup() {
+            const form = document.getElementById('postJobForm');
+            const preview = document.getElementById('preview');
+            if (form) form.style.display = 'none';
+            if (preview) preview.style.display = 'none';
+            document.getElementById('loginPopup').style.display = 'flex';
+        }
+        function hideLoginPopup() {
+            const form = document.getElementById('postJobForm');
+            if (form) form.style.display = '';
+            // preview stays hidden by default until the user clicks Preview
+            document.getElementById('loginPopup').style.display = 'none';
+            const err = document.getElementById('loginError'); if (err) err.style.display = 'none';
+        }
+
+        function isLoggedIn() {
+            return localStorage.getItem('ljf_logged_in') === '1';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wire up login buttons
+            const loginSubmit = document.getElementById('loginSubmit');
+            const loginCancel = document.getElementById('loginCancel');
+            if (loginSubmit) {
+                loginSubmit.addEventListener('click', function() {
+                    const email = document.getElementById('loginEmail').value.trim();
+                    const pw = document.getElementById('loginPassword').value;
+                    const err = document.getElementById('loginError');
+                    if (!email) {
+                        err.textContent = 'Please enter your email.';
+                        err.style.display = 'block';
+                        return;
+                    }
+                    if (!pw || pw.length < 6) {
+                        err.textContent = 'Please enter a password (min 6 characters).';
+                        err.style.display = 'block';
+                        return;
+                    }
+                    // Save demo login state (replace this with server-side authentication)
+                    localStorage.setItem('ljf_logged_in', '1');
+                    localStorage.setItem('ljf_user_email', email);
+                    hideLoginPopup();
+                    const fb = document.getElementById('feedback');
+                    if (fb) fb.textContent = 'Signed in as ' + email + '.';
+                });
+            }
+            if (loginCancel) {
+                loginCancel.addEventListener('click', function() {
+                    // If user cancels, go back to home
+                    window.location.href = 'genesis.html';
+                });
+            }
+
+            // Show login popup if not signed in
+            if (!isLoggedIn()) {
+                showLoginPopup();
+            } else {
+                const email = localStorage.getItem('ljf_user_email') || '';
+                const fb = document.getElementById('feedback');
+                if (fb && email) fb.textContent = 'Signed in as ' + email + '.';
+            }
+        });
+
+        document.getElementById('postJobForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('employerName').value.trim();
+            const employerEmail = document.getElementById('employerEmail').value.trim();
+            const recipients = document.getElementById('recipients').value.trim();
+            const jobTitle = document.getElementById('jobTitle').value.trim();
+            const description = document.getElementById('description').value.trim();
+            const other = document.getElementById('otherTypes').value.trim();
+
+            if (!employerEmail || !jobTitle) {
+                document.getElementById('feedback').textContent = 'Please provide your email and a job title.';
+                return;
+            }
+
+            // Collect selected job types
+            const checked = Array.from(document.querySelectorAll('#jobTypes input[type=checkbox]:checked')).map(cb => cb.value);
+            const otherList = other ? other.split(',').map(s => s.trim()).filter(Boolean) : [];
+            const types = checked.concat(otherList);
+
+            // Save job to localStorage
+            const job = {
+                id: Date.now(),
+                companyName: name || 'Unknown Company',
+                employerEmail: employerEmail,
+                jobTitle: jobTitle,
+                jobTypes: types,
+                description: description,
+                postedDate: new Date().toISOString()
+            };
+
+            let jobs = JSON.parse(localStorage.getItem('postedJobs') || '[]');
+            jobs.push(job);
+            localStorage.setItem('postedJobs', JSON.stringify(jobs));
+
+            // Build email content
+            const subject = encodeURIComponent('Job Posting: ' + jobTitle);
+
+            let body = '';
+            if (name) body += `Employer: ${name} (${employerEmail})\n\n`;
+            else body += `Employer email: ${employerEmail}\n\n`;
+
+            if (types.length) body += `Job types: ${types.join(', ')}\n\n`;
+            if (description) body += `Description:\n${description}\n\n`;
+
+            body += `--\nPosted from Local Job Finder`;
+
+            const encodedBody = encodeURIComponent(body);
+
+            // Prepare mailto link — will open the user's installed email client (handled by OS)
+            const to = recipients ? recipients.split(',').map(s => s.trim()).filter(Boolean).join(',') : '';
+            const mailto = to ? `mailto:${encodeURIComponent(to)}?subject=${subject}&body=${encodedBody}` : `mailto:?subject=${subject}&body=${encodedBody}`;
+
+            // Open mail client in the same tab (this simply hands off to OS email handler)
+            window.location.href = mailto;
+
+            // Provide feedback on the page
+            document.getElementById('feedback').textContent = 'Job posted successfully! Email compose opened. If nothing happened, copy the preview and send manually.';
+        });
+
+        document.getElementById('previewButton').addEventListener('click', function() {
+            const name = document.getElementById('employerName').value.trim();
+            const employerEmail = document.getElementById('employerEmail').value.trim();
+            const jobTitle = document.getElementById('jobTitle').value.trim();
+            const description = document.getElementById('description').value.trim();
+            const other = document.getElementById('otherTypes').value.trim();
+            const checked = Array.from(document.querySelectorAll('#jobTypes input[type=checkbox]:checked')).map(cb => cb.value);
+            const otherList = other ? other.split(',').map(s => s.trim()).filter(Boolean) : [];
+            const types = checked.concat(otherList);
+
+            let previewHTML = '';
+            if (name) previewHTML += `<p><strong>Employer:</strong> ${name} (${employerEmail})</p>`;
+            else previewHTML += `<p><strong>Employer email:</strong> ${employerEmail}</p>`;
+
+            if (types.length) previewHTML += `<p><strong>Job types:</strong> ${types.join(', ')}</p>`;
+            if (jobTitle) previewHTML += `<p><strong>Title:</strong> ${jobTitle}</p>`;
+            if (description) previewHTML += `<p><strong>Description:</strong></p><p>${description.replace(/\n/g, '<br>')}</p>`;
+
+            if (!previewHTML) previewHTML = '<p>No content to preview yet.</p>';
+
+            document.getElementById('previewContent').innerHTML = previewHTML;
+            document.getElementById('previewModal').style.display = 'flex';
+        });
+
+        // Close preview modal
+        document.getElementById('closePreviewBtn').addEventListener('click', function() {
+            document.getElementById('previewModal').style.display = 'none';
+        });
+
+        document.querySelector('.preview-modal-close').addEventListener('click', function() {
+            document.getElementById('previewModal').style.display = 'none';
+        });
+
+        // Close modal when clicking outside the content
+        document.getElementById('previewModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.getElementById('previewModal').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
